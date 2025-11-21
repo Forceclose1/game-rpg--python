@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏫 Petualangan Anti Virus di Sekolah</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(90deg, #e94560, #0f3460);
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 1.8em; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-label { font-size: 0.8em; color: #aaa; }
+        .stat-value { font-size: 1.3em; font-weight: bold; }
+        .hp-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00b894, #55efc4);
+            transition: width 0.3s;
+        }
+        .hp-fill.enemy { background: linear-gradient(90deg, #d63031, #e17055); }
+        .game-area {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 200px;
+        }
+        .location { color: #74b9ff; font-size: 1.2em; margin-bottom: 10px; }
+        .description { color: #dfe6e9; line-height: 1.6; margin-bottom: 15px; }
+        .message { padding: 10px; border-radius: 8px; margin: 10px 0; }
+        .message.info { background: rgba(116, 185, 255, 0.2); border-left: 4px solid #74b9ff; }
+        .message.success { background: rgba(0, 184, 148, 0.2); border-left: 4px solid #00b894; }
+        .message.danger { background: rgba(214, 48, 49, 0.2); border-left: 4px solid #d63031; }
+        .message.warning { background: rgba(253, 203, 110, 0.2); border-left: 4px solid #fdcb6e; }
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 120px;
+        }
+        button:hover { transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+        .btn-primary { background: linear-gradient(135deg, #0984e3, #74b9ff); color: white; }
+        .btn-success { background: linear-gradient(135deg, #00b894, #55efc4); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #d63031, #e17055); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #fdcb6e, #ffeaa7); color: #333; }
+        .btn-secondary { background: rgba(255,255,255,0.2); color: white; }
+        .battle-area { text-align: center; }
+        .enemy-info {
+            background: rgba(214, 48, 49, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .enemy-name { font-size: 1.3em; color: #e17055; }
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            margin: 10px 0;
+        }
+        input::placeholder { color: #aaa; }
+        .inventory-item, .skill-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .inventory-item:hover, .skill-item:hover { background: rgba(255,255,255,0.2); }
+        .combat-log {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .log-entry { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .hidden { display: none; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.3s; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse { animation: pulse 1s infinite; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏫 Petualangan Anti Virus di Sekolah 🏫</h1>
+            <p>SMKN 1 BRONDONG</p>
+        </div>
+        
+        <div id="status-section" class="status-bar hidden">
+            <div class="stat">
+                <div class="stat-label">👤 Player</div>
+                <div class="stat-value" id="player-name">-</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">⭐ Level</div>
+                <div class="stat-value" id="player-level">1</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">💚 HP</div>
+                <div class="hp-bar"><div class="hp-fill" id="player-hp-bar"></div></div>
+                <div id="player-hp-text">100/100</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">📊 EXP</div>
+                <div class="stat-value" id="player-exp">0/100</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">⚔️ ATK</div>
+                <div class="stat-value" id="player-atk">15</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">🛡️ DEF</div>
+                <div class="stat-value" id="player-def">5</div>
+            </div>
+        </div>
+        
+        <div class="game-area" id="game-area">
+            <!-- Game content here -->
+        </div>
+    </div>
+
+    <script>
+        const player = {
+            name: '', hp: 100, maxHp: 100, level: 1, exp: 0, expToLevel: 100,
+            attack: 15, defense: 5, skills: ['Antivirus Basic'],
+            inventory: [], healedStudents: 0, healedTeachers: 0, position: 'Gerbang Sekolah'
+        };
+
+        const rooms = {
+            'Gerbang Sekolah': {
+                desc: 'Kamu berada di gerbang sekolah. Suasana mencekam, layar komputer berkedip-kedip merah.',
+                connections: ['Halaman', 'Ruang Tata Usaha'], items: ['Health Potion'], enemy: null
+            },
+            'Halaman': {
+                desc: 'Halaman sekolah yang luas. Beberapa siswa berkeliaran dengan mata menyala merah.',
+                connections: ['Gerbang Sekolah', 'Kelas 10A', 'Lapangan'], items: [], enemy: 'student'
+            },
+            'Kelas 10A': {
+                desc: 'Kelas 10A. Ada 3 siswa yang terinfeksi malware di sini.',
+                connections: ['Halaman', 'Kelas 10B', 'Koridor Lantai 1'], items: ['Firewall Shield'], enemy: 'student'
+            },
+            'Kelas 10B': {
+                desc: 'Kelas 10B. Papan tulis menampilkan kode-kode aneh.',
+                connections: ['Kelas 10A', 'Koridor Lantai 1'], items: [], enemy: 'student'
+            },
+            'Koridor Lantai 1': {
+                desc: 'Koridor lantai 1. Lampu berkedip-kedip.',
+                connections: ['Kelas 10A', 'Kelas 10B', 'Tangga', 'Lab Komputer'], items: ['Health Potion'], enemy: null
+            },
+            'Lab Komputer': {
+                desc: 'Lab Komputer. Semua komputer terinfeksi! Ada guru TI yang terinfeksi di sini.',
+                connections: ['Koridor Lantai 1'], items: ['Encryption Key'], enemy: 'teacher'
+            },
+            'Tangga': {
+                desc: 'Tangga menuju lantai 2.',
+                connections: ['Koridor Lantai 1', 'Koridor Lantai 2'], items: [], enemy: null
+            },
+            'Koridor Lantai 2': {
+                desc: 'Koridor lantai 2. Lebih gelap dari lantai 1.',
+                connections: ['Tangga', 'Ruang Guru', 'Perpustakaan'], items: ['Health Potion'], enemy: null
+            },
+            'Ruang Guru': {
+                desc: 'Ruang Guru. Beberapa guru terinfeksi malware tingkat menengah!',
+                connections: ['Koridor Lantai 2'], items: ['Malware Scanner'], enemy: 'teacher'
+            },
+            'Perpustakaan': {
+                desc: 'Perpustakaan. Buku-buku bertuliskan kode binary.',
+                connections: ['Koridor Lantai 2', 'Ruang Kepala Sekolah'], items: ['System Restore'], enemy: 'teacher'
+            },
+            'Ruang Kepala Sekolah': {
+                desc: '⚠️ RUANG KEPALA SEKOLAH ⚠️ Aura malware tingkat tinggi terasa sangat kuat!',
+                connections: ['Perpustakaan'], items: ['Ultimate Antivirus'], enemy: 'principal'
+            },
+            'Ruang Tata Usaha': {
+                desc: 'Ruang Tata Usaha. Ada beberapa staf yang terinfeksi.',
+                connections: ['Gerbang Sekolah', 'Lapangan'], items: [], enemy: 'teacher'
+            },
+            'Lapangan': {
+                desc: 'Lapangan olahraga. Siswa-siswa terinfeksi sedang berlarian.',
+                connections: ['Halaman', 'Ruang Tata Usaha'], items: ['Health Potion'], enemy: 'student'
+            }
+        };
+
+        let clearedRooms = [];
+        let currentEnemy = null;
+        let combatLog = [];
+        let gameState = 'intro';
+
+        function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function updateStatus() {
+            document.getElementById('player-name').textContent = player.name;
+            document.getElementById('player-level').textContent = player.level;
+            document.getElementById('player-hp-text').textContent = `${player.hp}/${player.maxHp}`;
+            document.getElementById('player-hp-bar').style.width = `${(player.hp/player.maxHp)*100}%`;
+            document.getElementById('player-exp').textContent = `${player.exp}/${player.expToLevel}`;
+            document.getElementById('player-atk').textContent = player.attack;
+            document.getElementById('player-def').textContent = player.defense;
+        }
+
+        function createEnemy(type) {
+            if (type === 'student') {
+                const names = ['Siswa Terinfeksi', 'Murid Bermalware', 'Pelajar Terkena Virus'];
+                return { name: names[rand(0,2)], level: rand(1,3), hp: rand(30,50), maxHp: rand(30,50), attack: rand(8,12), defense: rand(2,4), expReward: 30, type: 'student' };
+            } else if (type === 'teacher') {
+                const names = ['Guru Terinfeksi', 'Pengajar Bermalware', 'Staff Terkena Virus'];
+                return { name: names[rand(0,2)], level: rand(4,6), hp: rand(60,90), maxHp: rand(60,90), attack: rand(15,20), defense: rand(5,8), expReward: 60, type: 'teacher' };
+            } else if (type === 'principal') {
+                return { name: '🔴 KEPALA SEKOLAH - MALWARE TINGKAT TINGGI 🔴', level: 10, hp: 200, maxHp: 200, attack: 30, defense: 15, expReward: 200, type: 'principal' };
+            }
+        }
+
+        function addLog(msg) {
+            combatLog.push(msg);
+            if (combatLog.length > 10) combatLog.shift();
+        }
+
+        function showIntro() {
+            document.getElementById('game-area').innerHTML = `
+                <div class="message info">
+                    <h2>Selamat datang di SMKN 1 BRONDONG!</h2>
+                    <p style="margin-top:10px">Namun... terjadi bencana! Seluruh warga sekolah terinfeksi malware!</p>
+                    <p style="margin-top:10px">Kamu adalah satu-satunya yang tidak terinfeksi. Tugas kamu: Sembuhkan semua orang dengan kekuatan Antivirus!</p>
+                </div>
+                <div class="message warning" style="margin-top:15px">
+                    <strong>Tingkat Infeksi:</strong><br>
+                    🟢 Siswa: Malware Ringan<br>
+                    🟡 Guru/Staff: Malware Menengah<br>
+                    🔴 Kepala Sekolah: Malware Tingkat Tinggi (BOSS)
+                </div>
+                <input type="text" id="name-input" placeholder="Masukkan nama kamu..." maxlength="20">
+                <div class="buttons">
+                    <button class="btn-success" onclick="startGame()">🎮 Mulai Bermain</button>
+                </div>
+            `;
+        }
+
+        function startGame() {
+            const nameInput = document.getElementById('name-input').value.trim();
+            player.name = nameInput || 'Hacker';
+            document.getElementById('status-section').classList.remove('hidden');
+            updateStatus();
+            gameState = 'explore';
+            exploreRoom();
+        }
+
+        function exploreRoom() {
+            const room = rooms[player.position];
+            let html = `<div class="location">📍 ${player.position}</div>
+                        <div class="description">${room.desc}</div>`;
+            
+            if (room.items.length > 0 && !clearedRooms.includes(player.position + '_items')) {
+                html += `<div class="message success">📦 Item ditemukan: ${room.items.join(', ')}</div>`;
+                room.items.forEach(item => player.inventory.push(item));
+                clearedRooms.push(player.position + '_items');
+            }
+            
+            if (room.enemy && !clearedRooms.includes(player.position)) {
+                currentEnemy = createEnemy(room.enemy);
+                currentEnemy.hp = currentEnemy.maxHp;
+                
+                if (currentEnemy.type === 'principal') {
+                    html += `<div class="message danger pulse">⚠️ BOSS FIGHT! ${currentEnemy.name}</div>`;
+                } else {
+                    html += `<div class="message danger">⚔️ ${currentEnemy.name} muncul!</div>`;
+                }
+                html += `<div class="buttons"><button class="btn-danger" onclick="startBattle()">⚔️ Mulai Pertarungan!</button></div>`;
+            } else {
+                html += `<div class="message info">🚪 Pilih tujuan:</div><div class="buttons">`;
+                room.connections.forEach(conn => {
+                    html += `<button class="btn-primary" onclick="moveTo('${conn}')">${conn}</button>`;
+                });
+                html += `<button class="btn-secondary" onclick="showInventory()">🎒 Inventory</button>`;
+                html += `<button class="btn-secondary" onclick="showStats()">📊 Status</button>`;
+                html += `</div>`;
+            }
+            
+            document.getElementById('game-area').innerHTML = html;
+            updateStatus();
+        }
+
+        function moveTo(location) {
+            player.position = location;
+            exploreRoom();
+        }
+
+        function startBattle() {
+            gameState = 'battle';
+            combatLog = [];
+            renderBattle();
+        }
+
+        function renderBattle() {
+            const enemyHpPercent = (currentEnemy.hp / currentEnemy.maxHp) * 100;
+            let html = `
+                <div class="battle-area">
+                    <div class="enemy-info">
+                        <div class="enemy-name">${currentEnemy.name}</div>
+                        <div>Level ${currentEnemy.level}</div>
+                        <div class="hp-bar"><div class="hp-fill enemy" style="width:${enemyHpPercent}%"></div></div>
+                        <div>HP: ${currentEnemy.hp}/${currentEnemy.maxHp}</div>
+                    </div>
+                    <div class="combat-log">
+                        ${combatLog.map(l => `<div class="log-entry">${l}</div>`).join('')}
+                    </div>
+                    <div class="buttons">
+                        <button class="btn-danger" onclick="playerAttack()">🗡️ Serang</button>
+                        <button class="btn-primary" onclick="showSkillsInBattle()">🔧 Skill</button>
+                        <button class="btn-success" onclick="showItemsInBattle()">🎒 Item</button>
+                        <button class="btn-warning" onclick="tryEscape()">🏃 Kabur</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('game-area').innerHTML = html;
+            updateStatus();
+        }
+
+        function playerAttack() {
+            const damage = Math.max(1, rand(player.attack - 3, player.attack + 5) - currentEnemy.defense);
+            currentEnemy.hp -= damage;
+            addLog(`💥 Kamu menyerang! Damage: ${damage}`);
+            
+            if (currentEnemy.hp <= 0) {
+                enemyDefeated();
+                return;
+            }
+            enemyTurn();
+        }
+
+        function useSkill(skill) {
+            let damage = 0;
+            let msg = '';
+            
+            if (skill === 'Antivirus Basic') {
+                damage = Math.max(1, Math.floor(player.attack * 1.5) - currentEnemy.defense);
+                msg = `🔥 Antivirus Basic! Damage: ${damage}`;
+            } else if (skill === 'Firewall Blast') {
+                damage = Math.max(1, Math.floor(player.attack * 2) - currentEnemy.defense);
+                player.defense += 2;
+                msg = `🔥 Firewall Blast! Damage: ${damage}, DEF +2!`;
+            } else if (skill === 'System Scan') {
+                damage = Math.max(1, Math.floor(player.attack * 2.5) - currentEnemy.defense);
+                player.hp = Math.min(player.hp + 15, player.maxHp);
+                msg = `🔥 System Scan! Damage: ${damage}, HP +15!`;
+            } else if (skill === 'Full System Restore') {
+                damage = Math.max(1, Math.floor(player.attack * 3) - currentEnemy.defense);
+                msg = `🔥 Full System Restore! MASSIVE Damage: ${damage}`;
+            }
+            
+            currentEnemy.hp -= damage;
+            addLog(msg);
+            
+            if (currentEnemy.hp <= 0) {
+                enemyDefeated();
+                return;
+            }
+            enemyTurn();
+        }
+
+        function showSkillsInBattle() {
+            let html = `<div class="message info">🔧 Pilih Skill:</div>`;
+            player.skills.forEach(skill => {
+                html += `<div class="skill-item" onclick="useSkill('${skill}')">${skill}</div>`;
+            });
+            html += `<div class="buttons"><button class="btn-secondary" onclick="renderBattle()">Kembali</button></div>`;
+            document.getElementById('game-area').innerHTML = html;
+        }
+
+        function showItemsInBattle() {
+            let html = `<div class="message info">🎒 Pilih Item:</div>`;
+            if (player.inventory.length === 0) {
+                html += `<div class="message warning">Inventory kosong!</div>`;
+            } else {
+                player.inventory.forEach((item, i) => {
+                    html += `<div class="inventory-item" onclick="useItemInBattle(${i})">${item}</div>`;
+                });
+            }
+            html += `<div class="buttons"><button class="btn-secondary" onclick="renderBattle()">Kembali</button></div>`;
+            document.getElementById('game-area').innerHTML = html;
+        }
+
+        function useItemInBattle(index) {
+            const item = player.inventory[index];
+            if (item.includes('Health Potion')) {
+                player.hp = Math.min(player.hp + 40, player.maxHp);
+                addLog(`💚 Menggunakan ${item}! HP +40`);
+                player.inventory.splice(index, 1);
+                enemyTurn();
+            } else if (item.includes('Shield')) {
+                player.defense += 5;
+                addLog(`🛡️ Menggunakan ${item}! DEF +5`);
+                player.inventory.splice(index, 1);
+                enemyTurn();
+            } else {
+                addLog(`📦 ${item} tidak bisa digunakan sekarang`);
+                renderBattle();
+            }
+        }
+
+        function enemyTurn() {
+            const damage = Math.max(1, rand(currentEnemy.attack - 2, currentEnemy.attack + 3) - player.defense);
+            player.hp -= damage;
+            addLog(`⚡ ${currentEnemy.name} menyerang! Damage: ${damage}`);
+            
+            if (player.hp <= 0) {
+                gameOver();
+                return;
+            }
+            renderBattle();
+        }
+
+        function tryEscape() {
+            if (Math.random() < 0.5) {
+                addLog('🏃 Berhasil kabur!');
+                gameState = 'explore';
+                exploreRoom();
+            } else {
+                addLog('❌ Gagal kabur!');
+                enemyTurn();
+            }
+        }
+
+        function enemyDefeated() {
+            clearedRooms.push(player.position);
+            player.exp += currentEnemy.expReward;
+            
+            if (currentEnemy.type === 'student') player.healedStudents++;
+            if (currentEnemy.type === 'teacher') player.healedTeachers++;
+            
+            // Learn new skills
+            if (currentEnemy.type === 'student' && player.healedStudents === 1 && !player.skills.includes('Firewall Blast')) {
+                player.skills.push('Firewall Blast');
+            }
+            if (currentEnemy.type === 'teacher' && player.healedTeachers === 1 && !player.skills.includes('System Scan')) {
+                player.skills.push('System Scan');
+            }
+            if (currentEnemy.type === 'teacher' && player.healedTeachers === 2 && !player.skills.includes('Full System Restore')) {
+                player.skills.push('Full System Restore');
+            }
+            
+            // Check level up
+            if (player.exp >= player.expToLevel) {
+                player.level++;
+                player.exp = 0;
+                player.expToLevel = Math.floor(player.expToLevel * 1.5);
+                player.maxHp += 20;
+                player.hp = player.maxHp;
+                player.attack += 5;
+                player.defense += 3;
+            }
+            
+            if (currentEnemy.type === 'principal') {
+                gameWon();
+                return;
+            }
+            
+            document.getElementById('game-area').innerHTML = `
+                <div class="message success">
+                    <h2>✅ ${currentEnemy.name} berhasil disembuhkan!</h2>
+                    <p>💎 EXP +${currentEnemy.expReward}</p>
+                </div>
+                <div class="buttons">
+                    <button class="btn-primary" onclick="exploreRoom()">Lanjutkan</button>
+                </div>
+            `;
+            updateStatus();
+        }
+
+        function gameOver() {
+            document.getElementById('game-area').innerHTML = `
+                <div class="message danger">
+                    <h2>💀 GAME OVER!</h2>
+                    <p>Kamu terinfeksi malware dan tidak bisa melanjutkan...</p>
+                </div>
+                <div class="buttons">
+                    <button class="btn-primary" onclick="location.reload()">🔄 Main Lagi</button>
+                </div>
+            `;
+        }
+
+        function gameWon() {
+            document.getElementById('game-area').innerHTML = `
+                <div class="message success" style="text-align:center">
+                    <h2>🎉🎉🎉 SELAMAT! KAMU MENANG! 🎉🎉🎉</h2>
+                    <p style="margin-top:15px">${player.name} berhasil menyembuhkan Kepala Sekolah!</p>
+                    <p>Semua malware telah dibersihkan dari sekolah!</p>
+                    <div style="margin-top:20px;text-align:left">
+                        <strong>📊 Statistik Akhir:</strong><br>
+                        Level: ${player.level}<br>
+                        Siswa Disembuhkan: ${player.healedStudents}<br>
+                        Guru/Staff Disembuhkan: ${player.healedTeachers}
+                    </div>
+                    <p style="margin-top:15px">Terima kasih telah bermain!</p>
+                </div>
+                <div class="buttons">
+                    <button class="btn-success" onclick="location.reload()">🔄 Main Lagi</button>
+                </div>
+            `;
+        }
+
+        function showInventory() {
+            let html = `<div class="message info"><h3>🎒 Inventory</h3></div>`;
+            if (player.inventory.length === 0) {
+                html += `<div class="message warning">Inventory kosong!</div>`;
+            } else {
+                player.inventory.forEach(item => {
+                    html += `<div class="inventory-item">${item}</div>`;
+                });
+            }
+            html += `<div class="buttons"><button class="btn-secondary" onclick="exploreRoom()">Kembali</button></div>`;
+            document.getElementById('game-area').innerHTML = html;
+        }
+
+        function showStats() {
+            document.getElementById('game-area').innerHTML = `
+                <div class="message info">
+                    <h3>📊 Status ${player.name}</h3>
+                    <p>Level: ${player.level}</p>
+                    <p>HP: ${player.hp}/${player.maxHp}</p>
+                    <p>ATK: ${player.attack} | DEF: ${player.defense}</p>
+                    <p>EXP: ${player.exp}/${player.expToLevel}</p>
+                    <p>Siswa Disembuhkan: ${player.healedStudents}</p>
+                    <p>Guru Disembuhkan: ${player.healedTeachers}</p>
+                    <p>Skills: ${player.skills.join(', ')}</p>
+                </div>
+                <div class="buttons"><button class="btn-secondary" onclick="exploreRoom()">Kembali</button></div>
+            `;
+        }
+
+        // Start
+        showIntro();
+    </script>
+</body>
+</html>
