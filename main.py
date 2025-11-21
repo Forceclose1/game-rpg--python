@@ -415,7 +415,7 @@ class Game:
         print("="*60)
         print("        🏫 MALWARE SCHOOL RPG 🏫")
         print("="*60)
-        print("\nSelamat datang di SMA Teknologi Maju!")
+        print("\nSelamat datang di SMKN 1 BRONDONG!")
         print("Namun... terjadi bencana! Seluruh warga sekolah terinfeksi malware!")
         print("\nKamu adalah satu-satunya yang tidak terinfeksi.")
         print("Tugas kamu: Sembuhkan semua orang dengan kekuatan Antivirus!")
@@ -473,3 +473,4 @@ class Game:
 if __name__ == "__main__":
     game = Game()
     game.play()
+
